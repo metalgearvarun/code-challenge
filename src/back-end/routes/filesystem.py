@@ -1,4 +1,5 @@
 import json
+import time
 from enum import Enum
 from pathlib import Path
 from typing import List, Optional
@@ -6,6 +7,7 @@ from typing import List, Optional
 from auth import extract_token
 from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.requests import Request
+from log_config import logger
 from pydantic import BaseModel
 
 router = APIRouter()
@@ -43,6 +45,7 @@ _files = _data["filesById"]
 
 @router.get("/public-folders", response_model=List[Folder])
 def get_public_folders():
+    logger.info("Get public folders")
     public = []
     for fid, folder in _folders.items():
         if not folder["isPrivate"]:
@@ -107,6 +110,7 @@ def get_private_folders(request: Request, tokenPayload: dict = Depends(extract_t
 
 @router.get("/private-folders/{folder_id}/files", response_model=List[File],)
 def read_private_folder_files(request: Request, tokenPayload: dict = Depends(extract_token), folder_id: str = None, file_type: Optional[FileType] = Query(None)):
+    time.sleep(1)
     folder = _folders.get(folder_id)
     if not folder:
         raise HTTPException(404, "Folder not found")

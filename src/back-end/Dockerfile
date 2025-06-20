@@ -5,7 +5,7 @@ ENV PYTHONUNBUFFERED 1
   
 WORKDIR /home/app
 COPY requirements.txt .
-COPY ./main.py ./auth.py ./
+COPY ./main.py ./log_config.py ./auth.py ./
 COPY db /home/app/db
 COPY routes /home/app/routes
 

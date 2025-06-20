@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import axios, { AxiosRequestConfig } from 'axios';
 import List from '@mui/material/List';
 import ListItem from '@mui/material/ListItem';
 import Button from '@mui/material/Button';
@@ -31,6 +32,8 @@ const FolderFileList: React.FC = () => {
   const [filesLoading, setFilesLoading] = useState<boolean>(false);
   const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
   const [filterType, setFilterType] = useState<string>('all');
+  const [folderError, setFolderError] = useState<string | null>(null);
+  const [fileError, setFileError] = useState<string | null>(null);
   const token = 'asd';
 
   useEffect(() => {
@@ -38,18 +41,20 @@ const FolderFileList: React.FC = () => {
       setLoading(true);
       setSelectedFolderId(null);
       setFiles([]);
+      setFolderError(null);
 
-      const headers: HeadersInit = {};
-      if (isLoggedIn) headers['Authorization'] = `Bearer ${token}`;
+      const endpoint = isLoggedIn ? 'private-folders' : 'public-folders';
+      const url = `http://localhost:8000/${endpoint}`;
+      const config: AxiosRequestConfig = {
+        headers: isLoggedIn ? { Authorization: `Bearer ${token}` } : {}
+      };
 
       try {
-        const endpoint = isLoggedIn ? 'private-folders' : 'public-folders';
-        const res = await fetch(`http://localhost:8000/${endpoint}`, { headers });
-        if (!res.ok) throw new Error(`Error: ${res.status}`);
-        const data = (await res.json()) as Folder[];
-        setFolders(data);
+        const response = await axios.get<Folder[]>(url, config);
+        setFolders(response.data);
       } catch (err) {
-        console.error('Failed to fetch folders', err);
+        const message = err instanceof Error ? err.message : 'Failed to fetch folders';
+        setFolderError(message);
         setFolders([]);
       } finally {
         setLoading(false);
@@ -67,22 +72,20 @@ const FolderFileList: React.FC = () => {
 
     setSelectedFolderId(folderId);
     setFilesLoading(true);
+    setFileError(null);
 
-    const headers: HeadersInit = {};
-    if (isLoggedIn) headers['Authorization'] = `Bearer ${token}`;
+    const prefix = isLoggedIn ? 'private-folders' : 'public-folders';
+    const url = `http://localhost:8000/${prefix}/${folderId}/files`;
+    const config: AxiosRequestConfig = {
+      headers: isLoggedIn ? { Authorization: `Bearer ${token}` } : {}
+    };
 
     try {
-      const prefix = isLoggedIn ? 'private-folders' : 'public-folders';
-      const res = await fetch(
-        `http://localhost:8000/${prefix}/${folderId}/files`,
-        { headers }
-      );
-      if (!res.ok) throw new Error(`Error: ${res.status}`);
-      const data = (await res.json()) as File[];
-      setFiles(data);
-      // filterType is no longer reset here to preserve selection
+      const response = await axios.get<File[]>(url, config);
+      setFiles(response.data);
     } catch (err) {
-      console.error('Failed to fetch files', err);
+      const message = err instanceof Error ? err.message : 'Failed to fetch files';
+      setFileError(message);
       setFiles([]);
     } finally {
       setFilesLoading(false);
@@ -90,8 +93,9 @@ const FolderFileList: React.FC = () => {
   };
 
   const fileTypes = ['all', 'document', 'image', 'video', 'audio'];
-  const displayedFiles =
-    filterType !== 'all' ? files.filter(file => file.type === filterType) : files;
+  const displayedFiles = filterType !== 'all'
+    ? files.filter(file => file.type === filterType)
+    : files;
 
   return (
     <Box p={2}>
@@ -115,6 +119,8 @@ const FolderFileList: React.FC = () => {
 
       {loading ? (
         <Typography>Loading folders...</Typography>
+      ) : folderError ? (
+        <Typography color="error">{folderError}</Typography>
       ) : (
         <List>
           {folders.map(folder => (
@@ -129,22 +135,28 @@ const FolderFileList: React.FC = () => {
               </ListItem>
 
               {selectedFolderId === folder.id && (
-                <List component="div" disablePadding>
-                  {filesLoading ? (
-                    <ListItem>
-                      <ListItemText primary="Loading files..." />
-                    </ListItem>
-                  ) : (
-                    displayedFiles.map((file, idx) => (
-                      <ListItem key={idx} sx={{ pl: 4 }}>
-                        <ListItemText
-                          primary={file.name}
-                          secondary={file.type}
-                        />
+                <Box>
+                  {fileError ? (
+                    <Typography color="error" sx={{ pl: 4 }}>{fileError}</Typography>
+                  ) : filesLoading ? (
+                    <List component="div" disablePadding>
+                      <ListItem>
+                        <ListItemText primary="Loading files..." />
                       </ListItem>
-                    ))
+                    </List>
+                  ) : (
+                    <List component="div" disablePadding>
+                      {displayedFiles.map((file, idx) => (
+                        <ListItem key={idx} sx={{ pl: 4 }}>
+                          <ListItemText
+                            primary={file.name}
+                            secondary={file.type}
+                          />
+                        </ListItem>
+                      ))}
+                    </List>
                   )}
-                </List>
+                </Box>
               )}
               <Divider />
             </React.Fragment>

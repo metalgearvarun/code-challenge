@@ -9,14 +9,15 @@
   ],
   "main": "src/front-end/src/index.tsx",
   "dependencies": {
+    "@emotion/react": "^11.x",
+    "@emotion/styled": "^11.x",
+    "@mui/material": "^5.x",
+    "axios": "^1.10.0",
     "loader-utils": "3.2.1",
     "phosphor-react": "1.4.1",
     "react": "18.2.0",
     "react-dom": "18.2.0",
-    "react-scripts": "5.0.1",
-    "@mui/material": "^5.x",
-    "@emotion/react": "^11.x",
-    "@emotion/styled": "^11.x"
+    "react-scripts": "5.0.1"
   },
   "devDependencies": {
     "@types/react": "18.2.38",

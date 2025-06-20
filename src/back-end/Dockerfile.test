@@ -24,7 +24,7 @@ RUN uv pip install --system --no-cache-dir -r requirements.txt \
     && uv pip install --system --no-cache-dir pytest httpx
 
 # Copy application code and tests
-COPY main.py auth.py ./
+COPY main.py ./log_config.py auth.py ./
 COPY db ./db
 COPY routes ./routes
 COPY tests/tests.py ./
