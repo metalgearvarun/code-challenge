@@ -6,6 +6,8 @@ from fastapi.security import OAuth2PasswordBearer
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
+# Authorize resources only if the user has permissions
+
 
 def getApiPermissions(apiName):
     # Define permissions for different API groups
@@ -36,6 +38,8 @@ def getApiPermissions(apiName):
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"API '{apiName}' not found in any permission group.")
 
+# Verify that the user permissions match the required minimum set of permissions to access a resource
+
 
 def check_permissions(required_permissions: list, user_permissions: list):
     print(
@@ -43,6 +47,8 @@ def check_permissions(required_permissions: list, user_permissions: list):
 
     if not all(permission in user_permissions for permission in required_permissions):
         raise HTTPException(status_code=403, detail="Permission denied")
+
+# Validate the token, extent to JWT verification
 
 
 def validate_token(token: str):
@@ -64,8 +70,11 @@ def validate_token_permissions(required_permissions: list, token: str, request: 
             detail="Invalid Credentials",
             headers={"WWW-Authenticate": "Bearer"},
         )
+    # Hardcode the user permissions, should be extracted from the token and api audience
     user_permissions = ['read:file']
     check_permissions(required_permissions, user_permissions)
+
+# Extract the bearer token
 
 
 def extract_token(request: Request, token: str = Depends(oauth2_scheme)) -> Optional[str]:

@@ -48,6 +48,7 @@ const FolderFileList: React.FC = () => {
       setFiles([]);
       setFolderError(null);
 
+      // Set the endpoint and use axios to make the request, if accessing a private folder, pass the bearer token
       const endpoint = isLoggedIn ? 'private-folders' : 'public-folders';
       const url = `${API_BASE_URL}/${endpoint}`;
       const config: AxiosRequestConfig = {
@@ -68,6 +69,7 @@ const FolderFileList: React.FC = () => {
     fetchFolders();
   }, [isLoggedIn]);
 
+  // Get the files when a folder is selected
   const handleFolderClick = async (folderId: string) => {
     if (selectedFolderId === folderId) {
       setSelectedFolderId(null);
@@ -121,7 +123,7 @@ const FolderFileList: React.FC = () => {
         <Button variant="contained" onClick={() => setIsLoggedIn(prev => !prev)}>
           {isLoggedIn ? 'LogOut' : 'LogIn'}
         </Button>
-        {/* Filter buttons */}
+        {/* Filter option for files*/}
         {fileTypes.map(type => (
           <Button
             key={type}
@@ -132,7 +134,7 @@ const FolderFileList: React.FC = () => {
             {type.charAt(0).toUpperCase() + type.slice(1)}
           </Button>
         ))}
-        {/* Sort key buttons */}
+        {/* Sort options for files */}
         {fileProps.map(prop => (
           <Button
             key={prop}

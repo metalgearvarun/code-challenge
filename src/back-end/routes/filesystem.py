@@ -13,12 +13,16 @@ from pydantic import BaseModel, validator
 
 router = APIRouter()
 
+# The file model
+
 
 class File(BaseModel):
     name: str
     created: str
     updated: str
     type: str
+
+# Filetypes enum
 
 
 class FileType(str, Enum):
@@ -27,6 +31,8 @@ class FileType(str, Enum):
     video = "video"
     audio = "audio"
 
+# Folder model
+
 
 class Folder(BaseModel):
     id: str
@@ -34,6 +40,7 @@ class Folder(BaseModel):
     created: str
     updated: str
 
+    # Validate the filename, must start with a letter
     @validator('name')
     def name_must_start_with_letter(cls, v: str) -> str:
         if not re.match(r'^[A-Za-z]', v):
@@ -50,8 +57,10 @@ _folders = _data["foldersById"]
 _files = _data["filesById"]
 
 
+# Get public folders, no authentication
 @router.get("/public-folders", response_model=List[Folder])
 def get_public_folders():
+    # Example logging
     logger.info("Get public folders")
     public = []
     for fid, folder in _folders.items():
@@ -88,7 +97,7 @@ def read_public_folder_files(folder_id: str, file_type: Optional[FileType] = Que
         if file_type and file_data["type"] != file_type.value:
             continue
 
-        # build the FileOut in a clear, field-by-field way
+        # build the File in a clear, field-by-field way
         file_out = File(
             name=file_data["name"],
             created=file_data["created"],
@@ -98,6 +107,8 @@ def read_public_folder_files(folder_id: str, file_type: Optional[FileType] = Que
         results.append(file_out)
 
     return results
+
+# Get private folder, expects a bearer token
 
 
 @router.get("/private-folders", response_model=List[Folder])
@@ -132,7 +143,7 @@ def read_private_folder_files(request: Request, tokenPayload: dict = Depends(ext
         if file_type and file_data["type"] != file_type.value:
             continue
 
-        # build the FileOut in a clear, field-by-field way
+        # build the File in a clear, field-by-field way
         file_out = File(
             name=file_data["name"],
             created=file_data["created"],
