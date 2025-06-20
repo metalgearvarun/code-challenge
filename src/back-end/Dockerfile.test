@@ -1,0 +1,33 @@
+# Dockerfile for running backend tests in a container
+FROM python:3.12-slim
+
+ENV PYTHONDONTWRITEBYTECODE 1
+ENV PYTHONUNBUFFERED 1
+
+# Set working directory
+WORKDIR /home/app
+
+# Copy dependency spec
+COPY requirements.txt ./
+
+# Install curl and uv package manager
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends curl \
+    && rm -rf /var/lib/apt/lists/* \
+    && curl -LsSf https://astral.sh/uv/install.sh | sh
+
+# Ensure uv is on PATH
+ENV PATH="/root/.local/bin:${PATH}"
+
+# Install application and test dependencies
+RUN uv pip install --system --no-cache-dir -r requirements.txt \
+    && uv pip install --system --no-cache-dir pytest httpx
+
+# Copy application code and tests
+COPY main.py auth.py ./
+COPY db ./db
+COPY routes ./routes
+COPY tests/tests.py ./
+
+# Default command: run pytest
+CMD ["pytest", "-s", "tests.py", "--disable-warnings", "--maxfail=1"]
