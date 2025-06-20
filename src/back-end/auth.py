@@ -15,7 +15,7 @@ def getApiPermissions(apiName):
 
     # Group APIs by their required permissions
     read_apis = {
-        'get_private_files'
+        'get_private_files', 'get_private_folders', 'read_private_folder_files'
     }
 
     write_apis = {
