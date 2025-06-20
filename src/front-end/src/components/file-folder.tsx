@@ -24,6 +24,8 @@ interface File {
   type: string;
 }
 
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
+
 const FolderFileList: React.FC = () => {
   const [folders, setFolders] = useState<Folder[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
@@ -44,7 +46,7 @@ const FolderFileList: React.FC = () => {
       setFolderError(null);
 
       const endpoint = isLoggedIn ? 'private-folders' : 'public-folders';
-      const url = `http://localhost:8000/${endpoint}`;
+      const url = `${API_BASE_URL}/${endpoint}`;
       const config: AxiosRequestConfig = {
         headers: isLoggedIn ? { Authorization: `Bearer ${token}` } : {}
       };
@@ -75,7 +77,7 @@ const FolderFileList: React.FC = () => {
     setFileError(null);
 
     const prefix = isLoggedIn ? 'private-folders' : 'public-folders';
-    const url = `http://localhost:8000/${prefix}/${folderId}/files`;
+    const url = `${API_BASE_URL}/${prefix}/${folderId}/files`;
     const config: AxiosRequestConfig = {
       headers: isLoggedIn ? { Authorization: `Bearer ${token}` } : {}
     };
