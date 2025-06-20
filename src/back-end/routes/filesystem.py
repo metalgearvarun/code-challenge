@@ -1,4 +1,5 @@
 import json
+import re
 import time
 from enum import Enum
 from pathlib import Path
@@ -8,7 +9,7 @@ from auth import extract_token
 from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.requests import Request
 from log_config import logger
-from pydantic import BaseModel
+from pydantic import BaseModel, validator
 
 router = APIRouter()
 
@@ -32,6 +33,12 @@ class Folder(BaseModel):
     name: str
     created: str
     updated: str
+
+    @validator('name')
+    def name_must_start_with_letter(cls, v: str) -> str:
+        if not re.match(r'^[A-Za-z]', v):
+            raise ValueError('filename must start with a letter')
+        return v
 
 
 # Load the JSON data at startup

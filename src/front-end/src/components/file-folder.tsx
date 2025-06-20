@@ -24,6 +24,7 @@ interface File {
   type: string;
 }
 
+// Load server URL from environment variable
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
 
 const FolderFileList: React.FC = () => {
@@ -34,6 +35,8 @@ const FolderFileList: React.FC = () => {
   const [filesLoading, setFilesLoading] = useState<boolean>(false);
   const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
   const [filterType, setFilterType] = useState<string>('all');
+  const [sortKey, setSortKey] = useState<keyof File | null>(null);
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
   const [folderError, setFolderError] = useState<string | null>(null);
   const [fileError, setFileError] = useState<string | null>(null);
   const token = 'asd';
@@ -54,8 +57,8 @@ const FolderFileList: React.FC = () => {
       try {
         const response = await axios.get<Folder[]>(url, config);
         setFolders(response.data);
-      } catch (err) {
-        const message = err instanceof Error ? err.message : 'Failed to fetch folders';
+      } catch (err: any) {
+        const message = err.message || 'Failed to fetch folders';
         setFolderError(message);
         setFolders([]);
       } finally {
@@ -85,8 +88,8 @@ const FolderFileList: React.FC = () => {
     try {
       const response = await axios.get<File[]>(url, config);
       setFiles(response.data);
-    } catch (err) {
-      const message = err instanceof Error ? err.message : 'Failed to fetch files';
+    } catch (err: any) {
+      const message = err.message || 'Failed to fetch files';
       setFileError(message);
       setFiles([]);
     } finally {
@@ -95,18 +98,30 @@ const FolderFileList: React.FC = () => {
   };
 
   const fileTypes = ['all', 'document', 'image', 'video', 'audio'];
-  const displayedFiles = filterType !== 'all'
-    ? files.filter(file => file.type === filterType)
-    : files;
+  const fileProps: (keyof File)[] = ['name', 'created', 'updated', 'type'];
+
+  // Apply filter
+  let displayed =
+    filterType !== 'all' ? files.filter(f => f.type === filterType) : [...files];
+  // Apply sort
+  if (sortKey) {
+    displayed.sort((a, b) => {
+      const aVal = a[sortKey];
+      const bVal = b[sortKey];
+      if (aVal < bVal) return sortOrder === 'asc' ? -1 : 1;
+      if (aVal > bVal) return sortOrder === 'asc' ? 1 : -1;
+      return 0;
+    });
+  }
 
   return (
     <Box p={2}>
       {/* Global controls */}
-      <Box mb={2} display="flex" gap={1}>
+      <Box mb={2} display="flex" gap={1} alignItems="center" flexWrap="wrap">
         <Button variant="contained" onClick={() => setIsLoggedIn(prev => !prev)}>
           {isLoggedIn ? 'LogOut' : 'LogIn'}
         </Button>
-        {/* Filter buttons always visible */}
+        {/* Filter buttons */}
         {fileTypes.map(type => (
           <Button
             key={type}
@@ -117,6 +132,21 @@ const FolderFileList: React.FC = () => {
             {type.charAt(0).toUpperCase() + type.slice(1)}
           </Button>
         ))}
+        {/* Sort key buttons */}
+        {fileProps.map(prop => (
+          <Button
+            key={prop}
+            size="small"
+            variant={sortKey === prop ? 'contained' : 'outlined'}
+            onClick={() => setSortKey(prev => (prev === prop ? null : prop))}
+          >
+            Sort by {prop.charAt(0).toUpperCase() + prop.slice(1)}
+          </Button>
+        ))}
+        {/* Order toggle */}
+        <Button size="small" variant="outlined" onClick={() => setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc')}>
+          {sortOrder === 'asc' ? 'Asc' : 'Desc'}
+        </Button>
       </Box>
 
       {loading ? (
@@ -148,12 +178,14 @@ const FolderFileList: React.FC = () => {
                     </List>
                   ) : (
                     <List component="div" disablePadding>
-                      {displayedFiles.map((file, idx) => (
+                      {displayed.map((file, idx) => (
                         <ListItem key={idx} sx={{ pl: 4 }}>
-                          <ListItemText
-                            primary={file.name}
-                            secondary={file.type}
-                          />
+                          <Box>
+                            <Typography variant="subtitle1">{file.name}</Typography>
+                            <Typography variant="body2">Type: {file.type}</Typography>
+                            <Typography variant="body2">Created: {file.created}</Typography>
+                            <Typography variant="body2">Updated: {file.updated}</Typography>
+                          </Box>
                         </ListItem>
                       ))}
                     </List>
