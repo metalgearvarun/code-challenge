@@ -56,20 +56,38 @@ def get_public_folders():
             )
     return public
 
+# Use fastapi rate limiter
+# @limiter.limit("5/minute")
 
-@router.get("/public-folders/{folder_id}/files", response_model=List[File],)
-def read_public_folder_files(folder_id: str):
+
+@router.get("/public-folders/{folder_id}/files", response_model=List[File])
+def read_public_folder_files(folder_id: str, file_type: Optional[FileType] = Query(None)):
     folder = _folders.get(folder_id)
-    if folder is None:
-        raise HTTPException(status_code=404, detail="Folder not found")
+    if not folder:
+        raise HTTPException(404, "Folder not found")
     if folder["isPrivate"]:
-        raise HTTPException(status_code=403, detail="Folder is private")
-    # gather and return the files
-    return [
-        File(**_files[file_id])
-        for file_id in folder["fileIds"]
-        if file_id in _files
-    ]
+        raise HTTPException(403, "Folder is private")
+
+    results: List[File] = []
+    for fid in folder["fileIds"]:
+        file_data = _files.get(fid)
+        if not file_data:
+            continue
+
+        # optional type filter
+        if file_type and file_data["type"] != file_type.value:
+            continue
+
+        # build the FileOut in a clear, field-by-field way
+        file_out = File(
+            name=file_data["name"],
+            created=file_data["created"],
+            updated=file_data["updated"],
+            type=file_data["type"],
+        )
+        results.append(file_out)
+
+    return results
 
 
 @router.get("/private-folders", response_model=List[Folder])
@@ -88,15 +106,31 @@ def get_private_folders(request: Request, tokenPayload: dict = Depends(extract_t
 
 
 @router.get("/private-folders/{folder_id}/files", response_model=List[File],)
-def read_private_folder_files(request: Request, tokenPayload: dict = Depends(extract_token), folder_id: str = None):
+def read_private_folder_files(request: Request, tokenPayload: dict = Depends(extract_token), folder_id: str = None, file_type: Optional[FileType] = Query(None)):
     folder = _folders.get(folder_id)
-    if folder is None:
-        raise HTTPException(status_code=404, detail="Folder not found")
-    return [
-        File(**_files[file_id])
-        for file_id in folder["fileIds"]
-        if file_id in _files
-    ]
+    if not folder:
+        raise HTTPException(404, "Folder not found")
+
+    results: List[File] = []
+    for fid in folder["fileIds"]:
+        file_data = _files.get(fid)
+        if not file_data:
+            continue
+
+        # optional type filter
+        if file_type and file_data["type"] != file_type.value:
+            continue
+
+        # build the FileOut in a clear, field-by-field way
+        file_out = File(
+            name=file_data["name"],
+            created=file_data["created"],
+            updated=file_data["updated"],
+            type=file_data["type"],
+        )
+        results.append(file_out)
+
+    return results
 
 
 @router.get("/public-files", response_model=List[File])

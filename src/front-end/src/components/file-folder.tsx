@@ -30,7 +30,8 @@ const FolderFileList: React.FC = () => {
   const [files, setFiles] = useState<File[]>([]);
   const [filesLoading, setFilesLoading] = useState<boolean>(false);
   const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
-  const token = "asd"
+  const [filterType, setFilterType] = useState<string>('all');
+  const token = 'asd';
 
   useEffect(() => {
     const fetchFolders = async () => {
@@ -38,18 +39,12 @@ const FolderFileList: React.FC = () => {
       setSelectedFolderId(null);
       setFiles([]);
 
-      // Build headers
       const headers: HeadersInit = {};
-      if (isLoggedIn) {
-        headers['Authorization'] = 'Bearer ' + token;
-      }
+      if (isLoggedIn) headers['Authorization'] = `Bearer ${token}`;
 
       try {
         const endpoint = isLoggedIn ? 'private-folders' : 'public-folders';
-        const res = await fetch(
-          `http://localhost:8000/${endpoint}`,
-          { headers }
-        );
+        const res = await fetch(`http://localhost:8000/${endpoint}`, { headers });
         if (!res.ok) throw new Error(`Error: ${res.status}`);
         const data = (await res.json()) as Folder[];
         setFolders(data);
@@ -73,11 +68,8 @@ const FolderFileList: React.FC = () => {
     setSelectedFolderId(folderId);
     setFilesLoading(true);
 
-    // Build headers
     const headers: HeadersInit = {};
-    if (isLoggedIn) {
-      headers['Authorization'] = 'Bearer ' + token;
-    }
+    if (isLoggedIn) headers['Authorization'] = `Bearer ${token}`;
 
     try {
       const prefix = isLoggedIn ? 'private-folders' : 'public-folders';
@@ -88,6 +80,7 @@ const FolderFileList: React.FC = () => {
       if (!res.ok) throw new Error(`Error: ${res.status}`);
       const data = (await res.json()) as File[];
       setFiles(data);
+      // filterType is no longer reset here to preserve selection
     } catch (err) {
       console.error('Failed to fetch files', err);
       setFiles([]);
@@ -96,27 +89,38 @@ const FolderFileList: React.FC = () => {
     }
   };
 
+  const fileTypes = ['all', 'document', 'image', 'video', 'audio'];
+  const displayedFiles =
+    filterType !== 'all' ? files.filter(file => file.type === filterType) : files;
+
   return (
     <Box p={2}>
-      <Box mb={2}>
-        <Button
-          variant="contained"
-          onClick={() => setIsLoggedIn((prev) => !prev)}
-        >
+      {/* Global controls */}
+      <Box mb={2} display="flex" gap={1}>
+        <Button variant="contained" onClick={() => setIsLoggedIn(prev => !prev)}>
           {isLoggedIn ? 'LogOut' : 'LogIn'}
         </Button>
+        {/* Filter buttons always visible */}
+        {fileTypes.map(type => (
+          <Button
+            key={type}
+            size="small"
+            variant={filterType === type ? 'contained' : 'outlined'}
+            onClick={() => setFilterType(type)}
+          >
+            {type.charAt(0).toUpperCase() + type.slice(1)}
+          </Button>
+        ))}
       </Box>
 
       {loading ? (
         <Typography>Loading folders...</Typography>
       ) : (
         <List>
-          {folders.map((folder) => (
+          {folders.map(folder => (
             <React.Fragment key={folder.id}>
               <ListItem button onClick={() => handleFolderClick(folder.id)}>
-                <ListItemText
-                  primary={folder.name}
-                />
+                <ListItemText primary={folder.name} />
                 <ListItemSecondaryAction>
                   <Typography variant="body2" color="textSecondary">
                     {/* optional date */}
@@ -131,7 +135,7 @@ const FolderFileList: React.FC = () => {
                       <ListItemText primary="Loading files..." />
                     </ListItem>
                   ) : (
-                    files.map((file, idx) => (
+                    displayedFiles.map((file, idx) => (
                       <ListItem key={idx} sx={{ pl: 4 }}>
                         <ListItemText
                           primary={file.name}
